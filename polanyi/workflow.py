@@ -4,7 +4,7 @@ from __future__ import annotations
 from collections.abc import MutableMapping, Sequence
 from dataclasses import dataclass
 from inspect import signature
-from os import PathLike
+from os import PathLike, path
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import textwrap
@@ -16,7 +16,7 @@ import numpy as np
 from polanyi import config
 from polanyi.geometry import two_frags_from_bo
 from polanyi.interpolation import interpolate_geodesic
-from polanyi.pyscf import OptResults, ts_from_gfnff_python
+from polanyi.pyscf import OptResults, ts_from_gfnff_python, ts_from_gfnff
 from polanyi.typing import Array1D, Array2D, ArrayLike2D
 from polanyi.xtb import (
     opt_crest,
@@ -84,6 +84,75 @@ def opt_ts_python(
         coordinates_guess = path[n_images // 2]
     opt_results = ts_from_gfnff_python(
         elements, coordinates_guess, calculators, e_shift=e_shift, **kw_opt
+    )
+
+    results = Results(
+        opt_results=opt_results,
+        coordinates_opt=opt_results.coordinates[-1],
+        shift_results=shift_results,
+    )
+
+    return results
+
+
+def opt_ts(
+    elements: Union[Sequence[int], Sequence[str]],
+    coordinates: Sequence[Array2D],
+    coordinates_guess: Optional[Array2D] = None,
+    atomic_charges: Optional[list[float]] = None,
+    e_shift: Optional[float] = None,
+    keywords: Optional[list[str]] = None,
+    # kw_calculators: Optional[Mapping] = None,
+    # kw_shift: Optional[Mapping] = None,
+    kw_opt: Optional[Mapping] = None,
+    kw_interpolation: Optional[Mapping] = None,
+    paths_topo: Optional[Sequence[Union[str, PathLike]]] = None,
+    paths_e_shift: Optional[Sequence[Union[str, PathLike]]] = None,
+    path_ts: Optional[Union[str, PathLike]] = None,
+) -> Results:
+    """Optimize transition state with xtb command line and PySCF."""
+    if kw_opt is None:
+        kw_opt = {}
+    # if kw_shift is None:
+    #     kw_shift = {}
+    # if kw_calculators is None:
+    #     kw_calculators = {}
+    if kw_interpolation is None:
+        kw_interpolation = {}
+    topologies = setup_gfnff_calculators(
+        elements,
+        coordinates,
+        atomic_charges=atomic_charges,
+        keywords=keywords,
+        paths=paths_topo,
+    )
+    shift_results: Optional[tuple[float, float, float]]
+    if e_shift is None:
+        shift_results = calculate_e_shift_xtb(
+            elements,
+            coordinates,
+            topologies,
+            keywords_ff=keywords,
+            keywords_sp=keywords,
+            paths=paths_e_shift,
+        )
+        e_shift = shift_results[0]
+    else:
+        shift_results = None
+    if coordinates_guess is None:
+        n_images = kw_interpolation.get("n_images")
+        if n_images is None:
+            n_images = signature(interpolate_geodesic).parameters["n_images"].default
+        path = interpolate_geodesic(elements, coordinates, **kw_interpolation)
+        coordinates_guess = path[n_images // 2]
+    opt_results = ts_from_gfnff(
+        elements,
+        coordinates_guess,
+        topologies,
+        keywords=keywords,
+        e_shift=e_shift,
+        **kw_opt,
+        path=path_ts,
     )
 
     results = Results(
