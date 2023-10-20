@@ -167,6 +167,7 @@ def opt_ts(
 def setup_gfnff_calculators(
     elements: Union[Sequence[int], Sequence[str]],
     coordinates: Sequence[ArrayLike2D],
+    atomic_charges: Optional[list[float]] = None,
     keywords: Optional[list[str]] = None,
     xcontrol_keywords: Optional[MutableMapping[str, list[str]]] = None,
     paths: Optional[Sequence[Union[str, PathLike]]] = None,
@@ -187,6 +188,10 @@ def setup_gfnff_calculators(
 
     topologies = []
     for coordinates_, xtb_path in zip(coordinates, xtb_paths):
+        if atomic_charges and not path.isfile(xtb_path / "charges"):
+            with open(xtb_path / "charges", "w") as f:
+                for charge in atomic_charges:
+                    f.write(f"{charge}\n")
         run_xtb(
             elements,
             coordinates_,
