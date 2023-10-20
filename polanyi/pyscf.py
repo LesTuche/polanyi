@@ -57,6 +57,10 @@ def e_g_function(
     """Find TS with GFN-FF."""
     # Get coordinates
     topologies = list(topologies)
+    if keywords is None:
+        keywords = []
+    keywords = set([keyword.strip().lower() for keyword in keywords])
+    keywords.add("--grad")
     if path is None:
         path = Path.cwd()
         temp_dirs = [
