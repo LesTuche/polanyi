@@ -103,6 +103,11 @@ def setup_gfnff_calculators(
     paths: Optional[Sequence[Union[str, PathLike]]] = None,
 ) -> list[bytes]:
     """Sets up force fields for GFNFF calculation."""
+    if keywords is None:
+        keywords = []
+    keywords = set([keyword.strip().lower() for keyword in keywords])
+    keywords.add("--gfnff")
+
     if paths is None:
         temp_dirs = [
             TemporaryDirectory(dir=config.TMP_DIR) for i in range(len(coordinates))
