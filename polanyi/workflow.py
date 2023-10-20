@@ -111,6 +111,8 @@ def opt_ts(
     path_ts: Optional[Union[str, PathLike]] = None,
 ) -> Results:
     """Optimize transition state with xtb command line and PySCF."""
+    if keywords is None:
+        keywords = []
     if kw_opt is None:
         kw_opt = {}
     # if kw_shift is None:
