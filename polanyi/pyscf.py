@@ -197,9 +197,7 @@ def ts_from_gfnff(
     """Optimize TS with GFNFF."""
     if conv_params is None:
         conv_params = {}
-    if path is None:
-        path = Path.cwd()
-    else:
+    if path:
         path = Path(path)
         path.mkdir(exist_ok=True)
     results = OptResults()
