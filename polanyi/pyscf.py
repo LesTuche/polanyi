@@ -200,6 +200,10 @@ def ts_from_gfnff(
     if path:
         path = Path(path)
         path.mkdir(exist_ok=True)
+    if keywords is None:
+        keywords = []
+    keywords = set([keyword.strip().lower() for keyword in keywords])
+    keywords.add("--gfnff")
     results = OptResults()
 
     mole = get_pyscf_mole(elements, coordinates)
