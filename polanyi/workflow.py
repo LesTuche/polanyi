@@ -101,43 +101,24 @@ def opt_ts(
     coordinates_guess: Optional[Array2D] = None,
     atomic_charges: Optional[list[float]] = None,
     e_shift: Optional[float] = None,
-    keywords: Optional[list[str]] = None,
-    # kw_calculators: Optional[Mapping] = None,
-    # kw_shift: Optional[Mapping] = None,
+    kw_calculators: Optional[Mapping] = None,
+    kw_shift: Optional[Mapping] = None,
     kw_opt: Optional[Mapping] = None,
     kw_interpolation: Optional[Mapping] = None,
-    paths_topo: Optional[Sequence[Union[str, PathLike]]] = None,
-    paths_e_shift: Optional[Sequence[Union[str, PathLike]]] = None,
-    path_ts: Optional[Union[str, PathLike]] = None,
 ) -> Results:
     """Optimize transition state with xtb command line and PySCF."""
-    if keywords is None:
-        keywords = []
     if kw_opt is None:
         kw_opt = {}
-    # if kw_shift is None:
-    #     kw_shift = {}
-    # if kw_calculators is None:
-    #     kw_calculators = {}
+    if kw_shift is None:
+        kw_shift = {}
+    if kw_calculators is None:
+        kw_calculators = {}
     if kw_interpolation is None:
         kw_interpolation = {}
-    topologies = setup_gfnff_calculators(
-        elements,
-        coordinates,
-        atomic_charges=atomic_charges,
-        keywords=keywords,
-        paths=paths_topo,
-    )
+    topologies = setup_gfnff_calculators(elements, coordinates, atomic_charges=atomic_charges, **kw_calculators)
     shift_results: Optional[tuple[float, float, float]]
     if e_shift is None:
-        shift_results = calculate_e_shift_xtb(
-            elements,
-            coordinates,
-            topologies,
-            keywords_ff=keywords,
-            keywords_sp=keywords,
-            paths=paths_e_shift,
-        )
+        shift_results = calculate_e_shift_xtb(elements, coordinates, topologies, **kw_shift)
         e_shift = shift_results[0]
     else:
         shift_results = None
@@ -147,15 +128,7 @@ def opt_ts(
             n_images = signature(interpolate_geodesic).parameters["n_images"].default
         path = interpolate_geodesic(elements, coordinates, **kw_interpolation)
         coordinates_guess = path[n_images // 2]
-    opt_results = ts_from_gfnff(
-        elements,
-        coordinates_guess,
-        topologies,
-        keywords=keywords,
-        e_shift=e_shift,
-        **kw_opt,
-        path=path_ts,
-    )
+    opt_results = ts_from_gfnff(elements, coordinates_guess, topologies, e_shift=e_shift, **kw_opt)
 
     results = Results(
         opt_results=opt_results,
