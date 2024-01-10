@@ -44,9 +44,15 @@ class OptResults:
     stderr: str = ""
 
 class EnginesWrapper:
-    """Wrapper for multiple engines for ConicalIntersection from geomeTRIC 1.0.1."""
+    """Wrapper (with list-like behaviours) for multiple engines for ConicalIntersection from geomeTRIC 1.0.1."""
     def __init__(self, engine_list):
         self.engines = engine_list
+
+    def __getitem__(self, key):
+        return self.engines[key]
+
+    def __len__(self):
+        return len(self.engines)
 
     def __deepcopy__(self, memo):
         # Create a new wrapper instance, sharing the same engine instances
