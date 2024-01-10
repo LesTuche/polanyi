@@ -16,7 +16,7 @@ import numpy as np
 from polanyi import config
 from polanyi.geometry import two_frags_from_bo
 from polanyi.interpolation import interpolate_geodesic
-from polanyi.pyscf import OptResults, ts_from_gfnff_python, ts_from_gfnff
+from polanyi.pyscf import OptResults, ts_from_gfnff_python, ts_from_gfnff, ts_from_gfnff_ci_python
 from polanyi.typing import Array1D, Array2D, ArrayLike2D
 from polanyi.xtb import (
     opt_crest,
@@ -93,6 +93,52 @@ def opt_ts_python(
     )
 
     return results
+
+def opt_ts_ci_python(
+    elements: Union[Sequence[int], Sequence[str]],
+    coordinates: Sequence[Array2D],
+    coordinates_guess: Optional[Array2D] = None,
+    e_shift: Optional[float] = None,
+    kw_calculators: Optional[Mapping] = None,
+    kw_shift: Optional[Mapping] = None,
+    kw_opt: Optional[Mapping] = None,
+    kw_interpolation: Optional[Mapping] = None,
+) -> Array2D:
+    """Optimize transition state with xtb-python and PySCF using conical intersection."""
+    if kw_opt is None:
+        kw_opt = {}
+    if kw_shift is None:
+        kw_shift = {}
+    if kw_calculators is None:
+        kw_calculators = {}
+    if kw_interpolation is None:
+        kw_interpolation = {}
+    calculators = setup_gfnff_calculators_python(
+        elements, coordinates, **kw_calculators
+    )
+    shift_results: Optional[ShiftResults]
+    if e_shift is None:
+        shift_results = calculate_e_shift_xtb_python(calculators, **kw_shift)
+        e_shift = shift_results.energy_shift
+    else:
+        shift_results = None
+    if coordinates_guess is None:
+        n_images = kw_interpolation.get("n_images")
+        if n_images is None:
+            n_images = signature(interpolate_geodesic).parameters["n_images"].default
+        path = interpolate_geodesic(elements, coordinates, **kw_interpolation)
+        coordinates_guess = path[n_images // 2]
+    coordinates_opt = ts_from_gfnff_ci_python(elements, coordinates_guess, calculators, e_shift=e_shift, **kw_opt)
+    # opt_results = ts_from_gfnff_python(
+    #     elements, coordinates_guess, calculators, e_shift=e_shift, **kw_opt
+    # )
+    # results = Results(
+    #     opt_results=opt_results,
+    #     coordinates_opt=opt_results.coordinates[-1],
+    #     shift_results=shift_results,
+    # )
+    # return results
+    return coordinates_opt
 
 
 def opt_ts(
