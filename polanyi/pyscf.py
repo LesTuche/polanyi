@@ -43,6 +43,18 @@ class OptResults:
     stdout: str = ""
     stderr: str = ""
 
+class EnginesWrapper:
+    """Wrapper for multiple engines for ConicalIntersection from geomeTRIC 1.0.1."""
+    def __init__(self, engine_list):
+        self.engines = engine_list
+
+    def __deepcopy__(self, memo):
+        # Create a new wrapper instance, sharing the same engine instances
+        # to avoid errors raised by deep copying of non-pickleable parts.
+        new_wrapper = EnginesWrapper(self.engines)
+        memo[id(self)] = new_wrapper
+        return new_wrapper
+
 
 def e_g_function(
     mol: "Mole",
@@ -401,8 +413,8 @@ def optimize_ci(
     meci_sigma = sigma
     meci_alpha = alpha
     engine_1.callback = callback
-    engine = ConicalIntersection(M, engine_1, engine_2, meci_sigma, meci_alpha)
-    # engine_1.callback = callback
+    engines_wrapper = EnginesWrapper([engine_1, engine_2])
+    engine = ConicalIntersection(M, engines_wrapper , meci_sigma, meci_alpha)
     engine.maxsteps = maxsteps
     # To avoid overwritting method.mol
     engine.mol = g_scanners[0].mol.copy()
