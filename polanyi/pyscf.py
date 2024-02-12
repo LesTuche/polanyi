@@ -433,11 +433,8 @@ def optimize_ci(
     if engine.mol.symmetry:
         engine.mol.symmetry = engine.mol.topgroup
 
-    # geomeTRIC library on pypi requires to provide config file log.ini.
-    # if not os.path.exists(
-    #     os.path.abspath(os.path.join(geometric.optimize.__file__, "..", "log.ini"))
-    # ):
-    #     kwargs["logIni"] = os.path.abspath(os.path.join(__file__, "..", "log.ini"))
+    # Provide config file log.ini for geomeTRIC optimisation
+    kwargs["logIni"] = os.path.abspath(os.path.abspath(os.path.join(__file__, "..", "log.ini")))
 
     engine.assert_convergence = assert_convergence
     try:
