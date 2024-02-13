@@ -12,6 +12,7 @@ from os import PathLike
 from pathlib import Path
 import tempfile
 from tempfile import TemporaryDirectory
+import shutil
 from typing import Any, Optional, Union
 
 import geometric
@@ -446,4 +447,11 @@ def optimize_ci(
     except geometric_solver.NotConvergedError as e:
         lib.logger.note(method, str(e))
         conv = False
+    
+    # Remove the temporary files created by geomeTRIC
+    if os.path.exists(f"{tmpf}_optim.xyz"):
+        os.remove(f"{tmpf}_optim.xyz")
+    if os.path.exists(f"{tmpf}.tmp"):
+        shutil.rmtree(f"{tmpf}.tmp")
+
     return conv, engine.mol
