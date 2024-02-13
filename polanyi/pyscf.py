@@ -190,7 +190,7 @@ def e_g_function_ci_python(
         path = Path(path)
 
     # Get coordinates
-    coordinates = np.ascontiguousarray(mol.atom_coords())
+    coordinates = np.ascontiguousarray(mol.atom_coords()) * BOHR_TO_ANGSTROM
 
     calculator.coordinates = coordinates
     energy, gradient = calculator.sp(return_gradient=True)
