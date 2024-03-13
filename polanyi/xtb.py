@@ -32,7 +32,7 @@ class XTBCalculator:
 
     Args:
         elements: Elements as atomic numbers
-        coordnates: Coordinates (Å)
+        coordinates: Coordinates (Å)
 
     Attributes:
         calculator: xtb-python calculator
@@ -92,6 +92,7 @@ class XTBCalculator:
 
     @coordinates.setter
     def coordinates(self, coordinates: Array2D) -> None:
+        """Convert coordinates to Bohr as needed for xTB"""
         self.calculator.update(coordinates * ANGSTROM_TO_BOHR)
         self._coordinates = coordinates
 
