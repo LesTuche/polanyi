@@ -423,6 +423,14 @@ def calculate_e_shift_xtb(
     paths: Optional[Sequence[Union[str, PathLike]]] = None,
 ) -> tuple[float, float, float]:
     """Calculate energy shift between geometries."""
+
+    # Set the xtb keywords for the GFN-FF calculations
+    if keywords_ff is None:
+        keywords_ff = []
+    keywords_ff = set([keyword.strip().lower() for keyword in keywords_ff])
+    # Give the --gfnff keyword (--gfn2 by default)
+    keywords_ff.add("--gfnff")
+
     if paths is None:
         temp_dirs = [
             TemporaryDirectory(dir=config.TMP_DIR) for i in range(len(coordinates))
