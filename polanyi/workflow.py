@@ -129,15 +129,7 @@ def opt_ts_ci_python(
         path = interpolate_geodesic(elements, coordinates, **kw_interpolation)
         coordinates_guess = path[n_images // 2]
     coordinates_opt = ts_from_gfnff_ci_python(elements, coordinates_guess, calculators, e_shift=e_shift, **kw_opt)
-    # opt_results = ts_from_gfnff_python(
-    #     elements, coordinates_guess, calculators, e_shift=e_shift, **kw_opt
-    # )
-    # results = Results(
-    #     opt_results=opt_results,
-    #     coordinates_opt=opt_results.coordinates[-1],
-    #     shift_results=shift_results,
-    # )
-    # return results
+
     return coordinates_opt
 
 
@@ -194,9 +186,12 @@ def setup_gfnff_calculators(
     paths: Optional[Sequence[Union[str, PathLike]]] = None,
 ) -> list[bytes]:
     """Sets up force fields for GFNFF calculation."""
+
+    # Set the xtb keywords for the GFN-FF calculations
     if keywords is None:
         keywords = []
     keywords = set([keyword.strip().lower() for keyword in keywords])
+    # Give the --gfnff keyword (--gfn2 by default)
     keywords.add("--gfnff")
 
     if paths is None:

@@ -73,8 +73,19 @@ def e_g_function(
     coupling: float = 0,
     path: Optional[Union[str, PathLike]] = None,
 ) -> tuple[float, Array2D]:
-    """Find TS with GFN-FF."""
-    # Get coordinates
+    """Find TS with GFN-FF using xtb command line.
+    Args:
+        mol: PySCF molecule (coordinates are in Bohr)
+        topologies: GFN-FF topologies
+        results: OptResults object
+        keywords: keywords for xTB calculation
+        xcontrol_keywords: xTB control keywords
+        e_shift: energy shift
+        coupling: coupling constant
+        path: path where to run calculations
+    Returns:
+        tuple of adiabatic energy and gradient
+    """
     topologies = list(topologies)
     if keywords is None:
         keywords = []
@@ -92,6 +103,7 @@ def e_g_function(
         xtb_paths = [path / str(i) for i in range(len(topologies))]
         cleanup = False
     elements = mol.atom_charges()
+    # Get coordinates in Angstrom
     coordinates = mol.atom_coords() * BOHR_TO_ANGSTROM
 
     energies = []
@@ -143,12 +155,22 @@ def e_g_function_python(
     coupling: float = 0,
     path: Optional[Union[str, PathLike]] = None,
 ) -> tuple[float, Array2D]:
-    """Find TS with GFN-FF."""
+    """Find TS with GFN-FF using xtb-python.
+    Args:
+        mol: PySCF molecule (coordinates are in Bohr)
+        calculators: xtb-python calculators
+        results: OptResults object
+        e_shift: energy shift
+        coupling: coupling constant
+        path: path where to run calculations
+    Returns:
+        tuple of adiabatic energy and gradient
+    """
     if path is None:
         path = Path.cwd()
     else:
         path = Path(path)
-    # Get coordinates
+    # Get coordinates in Angstrom
     coordinates: np.ndarray = np.ascontiguousarray(mol.atom_coords()) * BOHR_TO_ANGSTROM
 
     energies = []
@@ -183,13 +205,21 @@ def e_g_function_ci_python(
     e_shift: float = 0,
     path: Optional[Union[str, PathLike]] = None,
 ) -> tuple[float, Array2D]:
-    """Find TS with GFN-FF."""
+    """Find TS with GFN-FF using xtb-python and conical intersection.
+    Args:
+        mol: PySCF molecule (coordinates are in Bohr)
+        calculator: xtb-python calculator
+        e_shift: energy shift
+        path: path where to run calculations
+    Returns:
+        tuple of energy and gradient
+    """
     if path is None:
         path = Path.cwd()
     else:
         path = Path(path)
 
-    # Get coordinates
+    # Get coordinates in Angstrom
     coordinates = np.ascontiguousarray(mol.atom_coords()) * BOHR_TO_ANGSTROM
 
     calculator.coordinates = coordinates
