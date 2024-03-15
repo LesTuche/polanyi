@@ -16,7 +16,7 @@ import numpy as np
 from polanyi import config
 from polanyi.geometry import two_frags_from_bo
 from polanyi.interpolation import interpolate_geodesic
-from polanyi.pyscf import OptResults, ts_from_gfnff_python, ts_from_gfnff, ts_from_gfnff_ci_python
+from polanyi.pyscf import OptResults, ts_from_gfnff_python, ts_from_gfnff, ts_from_gfnff_ci_python, ts_from_gfnff_ci
 from polanyi.typing import Array1D, Array2D, ArrayLike2D
 from polanyi.xtb import (
     opt_crest,
@@ -58,7 +58,21 @@ def opt_ts_python(
     kw_opt: Optional[Mapping] = None,
     kw_interpolation: Optional[Mapping] = None,
 ) -> Results:
-    """Optimize transition state with xtb-python and PySCF."""
+    """Optimize transition state with xtb-python and PySCF.
+    
+    Args:
+        elements: Elements as symbols or numbers
+        coordinates: Sequence containing the coordinates of each ground states (Å)
+        coordinates_guess: Initial guess for the transition state (Å)
+        e_shift: Energy shift between the ground states
+        kw_calculators: xtb command line keywords for topologies calculation
+        kw_shift: xtb command line keywords for energy shift calculation
+        kw_opt: xtb command line keywords for optimization
+        kw_interpolation: xtb command line keywords for the TS interpolation
+
+    Returns:
+        results: results of the TS optimization
+    """
     if kw_opt is None:
         kw_opt = {}
     if kw_shift is None:
@@ -85,7 +99,6 @@ def opt_ts_python(
     opt_results = ts_from_gfnff_python(
         elements, coordinates_guess, calculators, e_shift=e_shift, **kw_opt
     )
-
     results = Results(
         opt_results=opt_results,
         coordinates_opt=opt_results.coordinates[-1],
@@ -93,6 +106,7 @@ def opt_ts_python(
     )
 
     return results
+
 
 def opt_ts_ci_python(
     elements: Union[Sequence[int], Sequence[str]],
@@ -104,7 +118,21 @@ def opt_ts_ci_python(
     kw_opt: Optional[Mapping] = None,
     kw_interpolation: Optional[Mapping] = None,
 ) -> Array2D:
-    """Optimize transition state with xtb-python and PySCF using conical intersection."""
+    """Optimize transition state with xtb-python and PySCF using conical intersection.
+    
+    Args:
+        elements: Elements as symbols or numbers
+        coordinates: Sequence containing the coordinates of each ground states (Å)
+        coordinates_guess: Initial guess for the transition state (Å)
+        e_shift: Energy shift between the ground states
+        kw_calculators: xtb command line keywords for topologies calculation
+        kw_shift: xtb command line keywords for energy shift calculation
+        kw_opt: xtb command line keywords for optimization
+        kw_interpolation: xtb command line keywords for the TS interpolation
+
+    Returns:
+        coordinates_op: coordinates of the optimised transition state (Å)
+    """
     if kw_opt is None:
         kw_opt = {}
     if kw_shift is None:
@@ -133,6 +161,66 @@ def opt_ts_ci_python(
     return coordinates_opt
 
 
+def opt_ts_ci(
+    elements: Union[Sequence[int], Sequence[str]],
+    coordinates: Sequence[Array2D],
+    coordinates_guess: Optional[Array2D] = None,
+    atomic_charges: Optional[list[float]] = None,
+    e_shift: Optional[float] = None,
+    kw_calculators: Optional[Mapping] = None,
+    kw_shift: Optional[Mapping] = None,
+    kw_opt: Optional[Mapping] = None,
+    kw_interpolation: Optional[Mapping] = None,
+) -> Results:
+    """Optimize transition state with xtb command line and PySCF using conical intersection.
+    
+    Args:
+        elements: Elements as symbols or numbers
+        coordinates: Sequence containing the coordinates of each ground states (Å)
+        coordinates_guess: Initial guess for the transition state (Å)
+        atomic_charges: Atomic charges (not implemented yet)
+        e_shift: Energy shift between the ground states
+        kw_calculators: xtb command line keywords for topologies calculation
+        kw_shift: xtb command line keywords for energy shift calculation
+        kw_opt: xtb command line keywords for optimization
+        kw_interpolation: xtb command line keywords for the TS interpolation
+
+    Returns:
+        results: results of the TS optimization
+    """
+    if kw_opt is None:
+        kw_opt = {}
+    if kw_shift is None:
+        kw_shift = {}
+    if kw_calculators is None:
+        kw_calculators = {}
+    if kw_interpolation is None:
+        kw_interpolation = {}
+    topologies = setup_gfnff_calculators(elements, coordinates, atomic_charges=atomic_charges, **kw_calculators)
+    shift_results: Optional[tuple[float, float, float]]
+    if e_shift is None:
+        shift_results = calculate_e_shift_xtb(elements, coordinates, topologies, **kw_shift)
+        e_shift = shift_results[0]
+    else:
+        shift_results = None
+    if coordinates_guess is None:
+        n_images = kw_interpolation.get("n_images")
+        if n_images is None:
+            n_images = signature(interpolate_geodesic).parameters["n_images"].default
+        path = interpolate_geodesic(elements, coordinates, **kw_interpolation)
+        coordinates_guess = path[n_images // 2]
+    opt_results = ts_from_gfnff_ci(
+        elements, coordinates_guess, topologies, e_shift=e_shift, **kw_opt
+    )
+    results = Results(
+        opt_results=opt_results,
+        coordinates_opt=opt_results.coordinates[-1],
+        shift_results=shift_results,
+    )
+
+    return results
+
+
 def opt_ts(
     elements: Union[Sequence[int], Sequence[str]],
     coordinates: Sequence[Array2D],
@@ -144,7 +232,22 @@ def opt_ts(
     kw_opt: Optional[Mapping] = None,
     kw_interpolation: Optional[Mapping] = None,
 ) -> Results:
-    """Optimize transition state with xtb command line and PySCF."""
+    """Optimize transition state with xtb command line and PySCF.
+
+    Args:
+        elements: Elements as symbols or numbers
+        coordinates: Sequence containing the coordinates of each ground states (Å)
+        coordinates_guess: Initial guess for the transition state (Å)
+        atomic_charges: Atomic charges (not implemented yet)
+        e_shift: Energy shift between the ground states
+        kw_calculators: xtb command line keywords for topologies calculation
+        kw_shift: xtb command line keywords for energy shift calculation
+        kw_opt: xtb command line keywords for optimization
+        kw_interpolation: xtb command line keywords for the TS interpolation
+
+    Returns:
+        results: results of the TS optimization
+    """
     if kw_opt is None:
         kw_opt = {}
     if kw_shift is None:
